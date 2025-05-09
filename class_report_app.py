@@ -12,12 +12,16 @@ month_options = st.multiselect("Select month(s):", ["May 2025", "June 2025", "Ju
 generate = st.button("Generate PDF Reports")
 
 if generate and month_options:
-    # --- Connect to Google Sheets ---
-    scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+    # --- Connect to Google Sheets --- 
     #creds = ServiceAccountCredentials.from_json_keyfile_name("service_account.json", scope)
+    
+    import json
+    from streamlit.runtime.secrets import secrets
+
+    scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+    creds_dict = json.loads(secrets["GOOGLE_SHEET_CREDS"])
+    creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
     client = gspread.authorize(creds)
-    sheet = client.open("pyton share sheet").sheet1
-    data = sheet.get_all_records()
 
     # --- Prepare summaries ---
     summary = defaultdict(lambda: defaultdict(float))
