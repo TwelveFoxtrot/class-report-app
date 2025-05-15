@@ -15,7 +15,28 @@ client = gspread.authorize(creds)
 
 # --- Streamlit UI ---
 st.title("📄 Monthly Class Report Generator")
-month_options = st.multiselect("Select month(s):", ["May 2025", "June 2025", "July 2025"])
+# Step 1: Extract available months from data
+available_months = set()
+
+for row in data:
+    raw_date = str(row.get("Date")).strip()
+    if not raw_date:
+        continue
+    try:
+        date_obj = datetime.strptime(raw_date, "%Y-%m-%d")
+    except:
+        try:
+            date_obj = datetime.strptime(raw_date, "%d/%m/%Y")
+        except:
+            continue
+
+    month_str = date_obj.strftime("%B %Y")
+    available_months.add(month_str)
+
+# Step 2: Create a sorted list of months for selection
+sorted_months = sorted(available_months, key=lambda x: datetime.strptime(x, "%B %Y"))
+month_options = st.multiselect("Select month(s):", sorted_months)
+data = sheet.get_all_records()
 generate = st.button("Generate PDF Reports")
 
 if generate and month_options:
