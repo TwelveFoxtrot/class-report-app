@@ -8,14 +8,26 @@ from datetime import datetime
 import os
 
 # --- Setup credentials using Streamlit secrets ---
-scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+scope = [
+    "https://spreadsheets.google.com/feeds",
+    "https://www.googleapis.com/auth/drive"
+]
 creds_dict = json.loads(st.secrets["GOOGLE_SHEET_CREDS"])
 creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
 client = gspread.authorize(creds)
 
-# --- Streamlit UI ---
+# --- Load data from Google Sheet ---
 st.title("📄 Monthly Class Report Generator")
-# Step 1: Extract available months from data
+
+try:
+    sheet = client.open("pyton share sheet").sheet1  # 🔁 Change to match your actual sheet name
+    data = sheet.get_all_records()
+    st.success(f"✅ Loaded {len(data)} rows from Google Sheet.")
+except Exception as e:
+    st.error("❌ Failed to load sheet.")
+    st.stop()
+
+# --- Extract available months from the Date column ---
 available_months = set()
 
 for row in data:
@@ -33,21 +45,12 @@ for row in data:
     month_str = date_obj.strftime("%B %Y")
     available_months.add(month_str)
 
-# Step 2: Create a sorted list of months for selection
+# --- Show dynamic month selector ---
 sorted_months = sorted(available_months, key=lambda x: datetime.strptime(x, "%B %Y"))
 month_options = st.multiselect("Select month(s):", sorted_months)
-data = sheet.get_all_records()
 generate = st.button("Generate PDF Reports")
 
 if generate and month_options:
-    try:
-        sheet = client.open("pyton share sheet").sheet1  # 🔁 Change to match your actual sheet name
-        data = sheet.get_all_records()
-        st.success(f"Loaded {len(data)} rows from Google Sheet.")
-    except Exception as e:
-        st.error("Failed to load sheet.")
-        st.stop()
-
     # --- Group data: summary[month][student] = total_hours
     summary = defaultdict(lambda: defaultdict(float))
 
